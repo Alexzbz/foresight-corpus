@@ -8,6 +8,11 @@ C-secondary）与偏差标注，全部可回溯、可复核。
 （consumer / home / medical-assistive / cross-domain，校验和见
 [corpus/corpus-meta.json](corpus/corpus-meta.json)）
 
+## 在线看板
+
+- **网页看板**：[aliaddyoaky.github.io/foresight-corpus](https://aliaddyoaky.github.io/foresight-corpus/) —— 指标总览、域/层级/发布方分布、全文检索与逐条溯源（数据由仓库快照实时加载）
+- CDN 直达（国内更快）：[cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/dashboard/index.html](https://cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/dashboard/index.html)
+
 ## 三种使用方式
 
 | 方式 | 适合谁 | 说明 |

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>foresight-corpus · 共享证据语料库看板</title>
+<style>
+  :root{
+    --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#ffffff; --soft:#f9fafb;
+    --accent:#1a56db; --accent-soft:#eaf1fe; --tierA:#1a56db; --tierB:#0e9f6e; --tierC:#d97706;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.6;font-size:14px}
+  .wrap{max-width:1200px;margin:0 auto;padding:32px 24px 64px}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
+         border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:24px}
+  h1{font-size:22px;font-weight:600;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .sub code{background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
+  .meta-right{text-align:right;color:var(--muted);font-size:12px}
+  .meta-right a{color:var(--accent);text-decoration:none}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+  .kpi{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--soft)}
+  .kpi .n{font-size:26px;font-weight:700;color:var(--accent)}
+  .kpi .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:28px}
+  .card{border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:12px;letter-spacing:.5px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 40px;align-items:center;gap:8px;margin:6px 0;font-size:12.5px}
+  .bar-row .name{color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-track{background:var(--soft);border-radius:4px;height:16px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--accent);border-radius:4px;min-width:2px}
+  .bar-row .num{color:var(--ink);font-weight:600}
+  .donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .controls input[type=text]{flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;
+         padding:8px 12px;font-size:13px;outline:none}
+  .controls input[type=text]:focus{border-color:var(--accent)}
+  .controls select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;color:var(--ink)}
+  .count{font-size:12px;color:var(--muted);margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;color:var(--muted);font-weight:500;font-size:12px;border-bottom:1px solid var(--line);
+           padding:8px 10px;white-space:nowrap}
+  tbody td{border-bottom:1px solid var(--soft);padding:10px;vertical-align:top}
+  tbody tr:hover{background:var(--soft)}
+  tr.detail td{background:var(--accent-soft);font-size:12.5px;color:#374151}
+  .claim{font-weight:500;cursor:pointer}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tag{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+  .tier{font-size:11px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap}
+  .t-A-primary{color:var(--tierA);background:var(--accent-soft)}
+  .t-B-expert{color:var(--tierB);background:#e6f6ef}
+  .t-C-secondary{color:var(--tierC);background:#fdf3e3}
+  .t-unknown{color:var(--muted);background:var(--soft)}
+  a.src{color:var(--accent);text-decoration:none;font-size:12px;white-space:nowrap}
+  a.src:hover{text-decoration:underline}
+  .date{color:var(--muted);font-size:12px;white-space:nowrap}
+  .more{display:block;margin:16px auto;border:1px solid var(--line);background:#fff;color:var(--ink);
+        border-radius:8px;padding:8px 22px;font-size:13px;cursor:pointer}
+  .more:hover{border-color:var(--accent);color:var(--accent)}
+  #status{padding:40px;text-align:center;color:var(--muted)}
+  .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--accent);
+        border-radius:50%;animation:r 0.8s linear infinite;vertical-align:-4px;margin-right:8px}
+  @keyframes r{to{transform:rotate(360deg)}}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;
+         display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  footer a{color:var(--accent);text-decoration:none}
+  @media print{.controls,.more{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>AI 硬件前瞻 · 共享证据语料库</h1>
+      <div class="sub">全部证据可溯源：每条带来源链接、摘录/定位器与偏差标注 · 数据由仓库快照实时加载</div>
+    </div>
+    <div class="meta-right" id="meta"></div>
+  </header>
+
+  <div id="status"><span class="spin"></span>正在从 CDN 加载语料…</div>
+
+  <div id="app" style="display:none">
+    <div class="kpis" id="kpis"></div>
+    <div class="charts">
+      <div class="card"><h3>域分布（条证据可属多域）</h3><div id="chart-domains"></div></div>
+      <div class="card"><h3>来源层级</h3><div class="donut-wrap" id="chart-tiers"></div></div>
+      <div class="card"><h3>高频发布方 TOP 8</h3><div id="chart-publishers"></div></div>
+      <div class="card"><h3>证据类型</h3><div id="chart-types"></div></div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="q" placeholder="搜索证据：关键词，如 眼镜 / EMG / 出货 / Meta …">
+      <select id="f-domain"><option value="">全部域</option></select>
+      <select id="f-tier">
+        <option value="">全部层级</option>
+        <option>A-primary</option><option>B-expert</option><option>C-secondary</option>
+      </select>
+    </div>
+    <div class="count" id="count"></div>
+    <table>
+      <thead><tr><th style="width:46%">证据主张</th><th>发布方 / 层级</th><th>域</th><th>发布日期</th><th>来源</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <button class="more" id="more">加载更多</button>
+  </div>
+
+  <footer>
+    <span id="foot-left"></span>
+    <span><a href="https://github.com/aliaddyoaky/foresight-corpus" target="_blank">GitHub 仓库</a>
+      · <a href="https://github.com/aliaddyoaky/foresight-corpus/blob/main/corpus/corpus-meta.json" target="_blank">版本清单</a>
+      · 引用请指向 corpus_id 与语料版本号</span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const CDN = "https://cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/corpus/";
+const FALLBACK_CDN = "https://fastly.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/corpus/";
+
+async function fetchText(url){
+  try{ const r = await fetch(url); if(!r.ok) throw new Error(r.status); return await r.text(); }
+  catch(e){ if(url.startsWith(CDN)) return await fetchText(FALLBACK_CDN + url.slice(CDN.length)); throw e; }
+}
+function parseJsonl(text){
+  return text.split("\n").filter(l=>l.trim()).map(l=>{try{return JSON.parse(l)}catch(e){return null}}).filter(Boolean);
+}
+const TIER_NAMES = {"A-primary":"A 一手/权威","B-expert":"B 专家/分析","C-secondary":"C 二手/媒体"};
+const DOMAIN_NAMES = {"consumer":"消费","home":"家居","medical-assistive":"医疗辅助","cross-domain":"跨域",
+                      "robotics":"机器人","industrial":"工业","automotive":"车载"};
+
+async function load(){
+  const meta = JSON.parse(await fetchText(CDN+"corpus-meta.json"));
+  const domains = meta.domains||[];
+  const evidenceMap = new Map();
+  const sourceMap = new Map();
+  for(const d of domains){
+    for(const row of parseJsonl(await fetchText(CDN+`evidence/${d}.jsonl`))) evidenceMap.set(row.corpus_id,row);
+  }
+  for(const s of parseJsonl(await fetchText(CDN+"evidence/sources.jsonl"))) sourceMap.set(s.source_id,s);
+  const evidence=[...evidenceMap.values()];
+  for(const r of evidence){ try{r.domains=JSON.parse(r.domains||"[]")}catch(e){r.domains=[]} }
+  render(meta, evidence, [...sourceMap.values()]);
+}
+
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fmtDate(s){ if(!s) return "—"; return s.slice(0,10); }
+function tierClass(t){ return "t-"+(t||"unknown"); }
+function dName(d){ return DOMAIN_NAMES[d]||d; }
+
+function donutSvg(slices){
+  const total=slices.reduce((a,s)=>a+s.v,0)||1; let ang=-Math.PI/2; const R=52,C=68;
+  const arcs=slices.map(s=>{
+    const a2=ang+s.v/total*2*Math.PI, large=(a2-ang)>Math.PI?1:0;
+    const x1=C+R*Math.cos(ang),y1=C+R*Math.sin(ang),x2=C+R*Math.cos(a2),y2=C+R*Math.sin(a2);
+    const seg=`<path d="M ${C} ${C} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z" fill="${s.color}" stroke="#fff" stroke-width="1.5"/>`;
+    ang=a2; return seg;
+  }).join("");
+  return `<svg width="136" height="136" viewBox="0 0 136 136">${arcs}
+    <circle cx="${C}" cy="${C}" r="30" fill="#fff"/>
+    <text x="${C}" y="${C-2}" text-anchor="middle" font-size="20" font-weight="700" fill="#1a56db">${total}</text>
+    <text x="${C}" y="${C+14}" text-anchor="middle" font-size="9" fill="#6b7280">条证据</text></svg>`;
+}
+function barList(pairs){
+  const max=Math.max(...pairs.map(p=>p[1]),1);
+  return pairs.map(([name,v])=>`
+    <div class="bar-row"><div class="name" title="${esc(name)}">${esc(name)}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(v/max*100).toFixed(1)}%"></div></div>
+    <div class="num">${v}</div></div>`).join("");
+}
+const TIER_COLORS={"A-primary":"#1a56db","B-expert":"#0e9f6e","C-secondary":"#d97706"};
+const TYPE_COLORS=["#1a56db","#0e9f6e","#d97706","#7c3aed","#0891b2","#db2777","#6b7280"];
+
+function render(meta, evidence, sources){
+  document.getElementById("status").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("meta").innerHTML=
+    `版本 <code>${esc(meta.corpus_version)}</code><br>更新于 ${esc((meta.updated_at||"").replace("T"," ").replace("Z"," UTC"))}<br>`+
+    `db sha256 <code style="font-size:10px">${esc((meta.db_sha256||"").slice(0,16))}…</code>`;
+  document.getElementById("foot-left").textContent=
+    `${meta.evidence} 条证据 · ${meta.sources} 个来源 · 快照 ${meta.db_bytes? (meta.db_bytes/1024).toFixed(0)+" KB":""}`;
+
+  const tierCount={},domainCount={},pubCount={},typeCount={};
+  for(const r of evidence){
+    tierCount[r.tier||"unknown"]=(tierCount[r.tier||"unknown"]||0)+1;
+    for(const d of r.domains) domainCount[d]=(domainCount[d]||0)+1;
+    const p=(r.publisher&&r.publisher!=="unknown")?r.publisher:"未标注";
+    pubCount[p]=(pubCount[p]||0)+1;
+    const t=r.observation_type||"other";
+    typeCount[t]=(typeCount[t]||0)+1;
+  }
+  const withDate=evidence.filter(r=>r.published_at&&r.published_at.startsWith("2")).length;
+  const aShare=evidence.length?Math.round((tierCount["A-primary"]||0)/evidence.length*100):0;
+  document.getElementById("kpis").innerHTML=[
+    [meta.evidence,"条证据（全部可溯源）"],[meta.sources,"个独立来源"],
+    [aShare+"%","一手/权威层级占比"],[withDate+"/"+meta.evidence,"带明确发布日期"],
+  ].map(([n,l])=>`<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+  document.getElementById("chart-domains").innerHTML=barList(
+    Object.entries(domainCount).sort((a,b)=>b[1]-a[1]).map(([d,v])=>[dName(d)+"（"+d+"）",v]));
+  const tiers=Object.entries(tierCount).sort((a,b)=>b[1]-a[1]);
+  document.getElementById("chart-tiers").innerHTML=
+    `<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center">`+
+    donutSvg(tiers.map(([t,v])=>({v,color:TIER_COLORS[t]||"#9ca3af"})))+
+    `<div class="legend" style="flex-direction:column;gap:8px">`+
+    tiers.map(([t,v])=>`<span><i class="dot" style="background:${TIER_COLORS[t]||"#9ca3af"}"></i>${TIER_NAMES[t]||t}　<b>${v}</b> 条</span>`).join("")+
+    `</div></div>`;
+  document.getElementById("chart-publishers").innerHTML=barList(
+    Object.entries(pubCount).sort((a,b)=>b[1]-a[1]).slice(0,8));
+  const types=Object.entries(typeCount).sort((a,b)=>b[1]-a[1]);
+  document.getElementById("chart-types").innerHTML=
+    `<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center">`+
+    donutSvg(types.map(([t,v],i)=>({v,color:TYPE_COLORS[i%TYPE_COLORS.length]})))+
+    `<div class="legend" style="flex-direction:column;gap:8px">`+
+    types.map(([t,v],i)=>`<span><i class="dot" style="background:${TYPE_COLORS[i%TYPE_COLORS.length]}"></i>${t}　<b>${v}</b></span>`).join("")+
+    `</div></div>`;
+
+  const domainSel=document.getElementById("f-domain");
+  for(const [d,v] of Object.entries(domainCount).sort((a,b)=>b[1]-a[1])){
+    domainSel.add(new Option(`${dName(d)}（${d}） ${v}`,d));
+  }
+
+  const PAGE=50; let shown=0, openId=null;
+  const qInput=document.getElementById("q");
+  function filtered(){
+    const q=qInput.value.trim().toLowerCase(), d=domainSel.value, t=document.getElementById("f-tier").value;
+    return evidence.filter(r=>{
+      if(d&&!r.domains.includes(d))return false;
+      if(t&&r.tier!==t)return false;
+      if(q&&!((r.claim||"")+" "+(r.excerpt||"")+" "+(r.publisher||"")+" "+(r.locator||"")).toLowerCase().includes(q))return false;
+      return true;
+    });
+  }
+  function page(){
+    const list=filtered();
+    const slice=list.slice(0,shown);
+    document.getElementById("count").textContent=`显示 ${slice.length} / ${list.length} 条（共 ${evidence.length} 条）`;
+    document.getElementById("rows").innerHTML=slice.map((r,i)=>{
+      let row=`<tr>
+        <td><div class="claim" data-id="${esc(r.corpus_id)}">${i+1}. ${esc(r.claim)}</div></td>
+        <td>${esc(r.publisher&&r.publisher!=="unknown"?r.publisher:"未标注")}<br>
+            <span class="tier ${tierClass(r.tier)}">${esc(r.tier||"unknown")}</span></td>
+        <td><div class="tags">${r.domains.map(d=>`<span class="tag">${dName(d)}</span>`).join("")}</div></td>
+        <td class="date">${fmtDate(r.published_at)}</td>
+        <td><a class="src" href="${esc(r.source_url)}" target="_blank" rel="noopener">打开 ↗</a></td>
+      </tr>`;
+      if(openId===r.corpus_id){
+        row+=`<tr class="detail"><td colspan="5">
+          <b>摘录：</b>${esc(r.excerpt||"—")}<br>
+          <b>定位器：</b>${esc(r.locator||"—")}　<b>采集：</b>${esc(fmtDate(r.retrieved_at))}　<b>corpus_id：</b><code>${esc(r.corpus_id)}</code><br>
+          ${r.bias_notes?`<b>偏差标注：</b>${esc(r.bias_notes)}`:""}
+        </td></tr>`;
+      }
+      return row;
+    }).join("");
+    document.getElementById("more").style.display=shown>=list.length?"none":"block";
+    for(const el of document.querySelectorAll(".claim")){
+      el.onclick=()=>{openId=openId===el.dataset.id?null:el.dataset.id;page();};
+    }
+  }
+  function refresh(){shown=PAGE;page();}
+  qInput.addEventListener("input",refresh);
+  domainSel.addEventListener("change",refresh);
+  document.getElementById("f-tier").addEventListener("change",refresh);
+  document.getElementById("more").onclick=()=>{shown+=PAGE;page();};
+  refresh();
+}
+
+load().catch(e=>{
+  document.getElementById("status").innerHTML=
+    `⚠️ 语料加载失败（${esc(e.message||e)}）。<br>请检查网络后 <a href="." style="color:#1a56db">刷新重试</a>；`+
+    `也可直接 <a href="https://github.com/aliaddyoaky/foresight-corpus" style="color:#1a56db">查看仓库</a>。`;
+});
+</script>
+</body>
+</html>
