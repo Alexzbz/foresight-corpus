@@ -111,16 +111,16 @@
 
   <footer>
     <span id="foot-left"></span>
-    <span><a href="https://github.com/aliaddyoaky/foresight-corpus" target="_blank">GitHub 仓库</a>
-      · <a href="https://github.com/aliaddyoaky/foresight-corpus/blob/main/corpus/corpus-meta.json" target="_blank">版本清单</a>
+    <span><a href="https://github.com/Alexzbz/foresight-corpus" target="_blank">GitHub 仓库</a>
+      · <a href="https://github.com/Alexzbz/foresight-corpus/blob/main/corpus/corpus-meta.json" target="_blank">版本清单</a>
       · 引用请指向 corpus_id 与语料版本号</span>
   </footer>
 </div>
 
 <script>
 "use strict";
-const CDN = "https://cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/corpus/";
-const FALLBACK_CDN = "https://fastly.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/corpus/";
+const CDN = "https://cdn.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/corpus/";
+const FALLBACK_CDN = "https://fastly.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/corpus/";
 
 async function fetchText(url){
   try{ const r = await fetch(url); if(!r.ok) throw new Error(r.status); return await r.text(); }
@@ -273,7 +273,7 @@ function render(meta, evidence, sources){
 load().catch(e=>{
   document.getElementById("status").innerHTML=
     `⚠️ 语料加载失败（${esc(e.message||e)}）。<br>请检查网络后 <a href="." style="color:#1a56db">刷新重试</a>；`+
-    `也可直接 <a href="https://github.com/aliaddyoaky/foresight-corpus" style="color:#1a56db">查看仓库</a>。`;
+    `也可直接 <a href="https://github.com/Alexzbz/foresight-corpus" style="color:#1a56db">查看仓库</a>。`;
 });
 </script>
 </body>

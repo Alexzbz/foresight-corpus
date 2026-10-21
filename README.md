@@ -10,15 +10,15 @@ C-secondary）与偏差标注，全部可回溯、可复核。
 
 ## 在线看板
 
-- **网页看板**：[aliaddyoaky.github.io/foresight-corpus](https://aliaddyoaky.github.io/foresight-corpus/) —— 指标总览、域/层级/发布方分布、全文检索与逐条溯源（数据由仓库快照实时加载）
-- CDN 直达（国内更快）：[cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/docs/index.html](https://cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/docs/index.html)
+- **网页看板**：[Alexzbz.github.io/foresight-corpus](https://Alexzbz.github.io/foresight-corpus/) —— 指标总览、域/层级/发布方分布、全文检索与逐条溯源（数据由仓库快照实时加载）
+- CDN 直达（国内更快）：[cdn.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/docs/index.html](https://cdn.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/docs/index.html)
 
 ## 三种使用方式
 
 | 方式 | 适合谁 | 说明 |
 |---|---|---|
 | **零配置在线检索** | skill 使用者 | 公共只读凭证已内置在 skill 中：`library.py search "关键词" --remote` 即查，无需注册 |
-| **免注册整库下载** | 离线 / 自建检索 | 从 jsDelivr 直拉快照：`library.py pull --url https://cdn.jsdelivr.net/gh/aliaddyoaky/foresight-corpus@main/corpus/corpus.db` |
+| **免注册整库下载** | 离线 / 自建检索 | 从 jsDelivr 直拉快照：`library.py pull --url https://cdn.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/corpus/corpus.db` |
 | **直接 SQL** | 数据分析 | Turso 在线库 `https://foresight-corpus-alex707.aws-ap-northeast-1.turso.io`（只读令牌随 skill 发行）或下载 `corpus/corpus.db` 本地查询 |
 
 ## 仓库结构
