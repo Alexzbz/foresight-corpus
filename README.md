@@ -4,8 +4,8 @@
 带来源 URL、可定位的摘录（excerpt / locator）、发布层级（A-primary / B-expert /
 C-secondary）与偏差标注，全部可回溯、可复核。
 
-**当前版本：`lib-2026.10.21` · 87 条证据 · 66 个来源 · 4 个域**
-（consumer / home / medical-assistive / cross-domain，校验和见
+**当前版本：`lib-2026.10.22` · 227 条证据 · 197 个来源 · 7 个域 · schema v2（主题标签/来源类型/数值指标）**
+（consumer / home / medical-assistive / cross-domain / robotics / automotive / industrial，校验和见
 [corpus/corpus-meta.json](corpus/corpus-meta.json)）
 
 ## 在线看板

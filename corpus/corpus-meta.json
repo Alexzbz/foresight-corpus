@@ -1,15 +1,20 @@
 {
-  "corpus_version": "lib-2026.10.21",
-  "updated_at": "2026-10-21T08:47:36Z",
-  "evidence": 87,
-  "sources": 66,
+  "corpus_version": "lib-2026.10.22",
+  "updated_at": "2026-10-21 15:43:49",
+  "schema_version": "2",
+  "evidence": 227,
+  "sources": 197,
   "domains": [
+    "automotive",
     "consumer",
     "cross-domain",
     "home",
-    "medical-assistive"
+    "industrial",
+    "medical-assistive",
+    "robotics"
   ],
-  "db_sha256": "dce7f3c06ba69ec85ee81c1f85a0a05b0270618bb30ff39537359d0f820d65e0",
-  "db_bytes": 159744,
+  "tagged": 140,
+  "db_sha256": "5965e270f9f5381f0a3d05045b962c63dbe0efe292ee92e8f0a1144a7ec55e3f",
+  "db_bytes": 753664,
   "remote": "https://foresight-corpus-alex707.aws-ap-northeast-1.turso.io"
 }
