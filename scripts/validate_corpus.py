@@ -110,6 +110,35 @@ def main() -> int:
     if manifest.get("db_sha256") != digest:
         errors.append("corpus-meta.json db_sha256 does not match corpus.db")
 
+    # schema v3: controlled vocabularies + event clusters must be internally consistent
+    v3_enums = {
+        "access_level": {"fulltext", "abstract", "snippet", "unknown"},
+        "verification_state": {"human-verified", "provisional", "disputed"},
+        "evidence_type": {"academic", "product", "user", "regulation", "market", "other"},
+    }
+    if meta_db.get("schema_version") == "3":
+        for r in evidence:
+            for column, allowed in v3_enums.items():
+                if r.get(column) not in allowed:
+                    errors.append(f"{r['corpus_id']}: {column}={r.get(column)!r} not in {sorted(allowed)}")
+        conn = sqlite3.connect(str(DB))
+        conn.row_factory = sqlite3.Row
+        events = [dict(e) for e in conn.execute("SELECT * FROM events")]
+        conn.close()
+        event_ids = {e["event_id"] for e in events}
+        for r in evidence:
+            cid = r.get("event_cluster_id")
+            if cid and cid not in event_ids:
+                errors.append(f"{r['corpus_id']}: event_cluster_id {cid} has no events row")
+        for e in events:
+            members = [r for r in evidence if r.get("event_cluster_id") == e["event_id"]]
+            if len(members) != e["member_count"]:
+                errors.append(f"event {e['event_id']}: member_count {e['member_count']} != actual {len(members)}")
+            if e["member_count"] < 2:
+                errors.append(f"event {e['event_id']}: clusters must have >= 2 members")
+        if manifest.get("events") != len(events):
+            errors.append(f"corpus-meta.json events count {manifest.get('events')} != db {len(events)}")
+
     print(f"corpus {meta_db.get('corpus_version')}: {len(evidence)} evidence, "
           f"{len(sources)} sources, {len(export_files)} export files")
     if errors:

@@ -1,7 +1,7 @@
 {
   "corpus_version": "lib-2026.10.22",
-  "updated_at": "2026-10-21 15:43:49",
-  "schema_version": "2",
+  "updated_at": "2026-10-21T17:00:12Z",
+  "schema_version": "3",
   "evidence": 227,
   "sources": 197,
   "domains": [
@@ -14,7 +14,9 @@
     "robotics"
   ],
   "tagged": 140,
-  "db_sha256": "5965e270f9f5381f0a3d05045b962c63dbe0efe292ee92e8f0a1144a7ec55e3f",
+  "events": 13,
+  "independent_events": 209,
+  "db_sha256": "06e48dc05d7cc07cb36b342565afc33ce20b99229cf1a8d59d0c2329a74a554f",
   "db_bytes": 753664,
   "remote": "https://foresight-corpus-alex707.aws-ap-northeast-1.turso.io"
 }

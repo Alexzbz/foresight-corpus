@@ -142,8 +142,9 @@ async function fetchLive(){
     headers: {"Authorization": "Bearer " + LIVE.token, "Content-Type": "application/json"},
     body: JSON.stringify({requests: [
       stmt("SELECT key, value FROM corpus_meta"),
-      stmt("SELECT corpus_id, claim, excerpt, locator, source_id, source_url, publisher, tier, published_at, retrieved_at, domains, geography, bias_notes, source_kind, tags, metrics, observation_type FROM evidence ORDER BY retrieved_at DESC"),
+      stmt("SELECT corpus_id, claim, excerpt, locator, source_id, source_url, publisher, tier, published_at, retrieved_at, domains, geography, bias_notes, source_kind, tags, metrics, observation_type, access_level, verification_state, event_cluster_id, evidence_type FROM evidence ORDER BY retrieved_at DESC"),
       stmt("SELECT COUNT(*) FROM sources"),
+      stmt("SELECT COUNT(*), COALESCE(SUM(member_count),0) FROM events"),
     ]}),
   });
   if(!resp.ok) throw new Error("live api " + resp.status);
@@ -160,11 +161,15 @@ async function fetchLive(){
             published_at: r[8] || "", retrieved_at: r[9] || "",
             domains: j(r[10], []), geography: j(r[11], []), bias_notes: r[12] || "",
             source_kind: r[13] || "other", tags: j(r[14], []), metrics: j(r[15], []),
-            observation_type: r[16] || "other"};
+            observation_type: r[16] || "other",
+            access_level: r[17] || "unknown", verification_state: r[18] || "provisional",
+            event_cluster_id: r[19] || null, evidence_type: r[20] || "other"};
   });
+  const [eventCount, clustered] = rowsOf(3)[0].map(Number);
   return {mode: "live",
           meta: {corpus_version: meta.corpus_version, updated_at: meta.updated_at,
-                 evidence: evidence.length, sources: Number(rowsOf(2)[0][0] || 0)},
+                 evidence: evidence.length, sources: Number(rowsOf(2)[0][0] || 0),
+                 events: eventCount, independent_events: evidence.length - clustered + eventCount},
           evidence};
 }
 const TIER_NAMES = {"A-primary":"A 一手/权威","B-expert":"B 专家/分析","C-secondary":"C 二手/媒体"};
@@ -245,8 +250,9 @@ function render(meta, evidence, sources, mode){
   }
   const withDate=evidence.filter(r=>r.published_at&&r.published_at.startsWith("2")).length;
   const aShare=evidence.length?Math.round((tierCount["A-primary"]||0)/evidence.length*100):0;
+  const independent = meta.independent_events != null ? meta.independent_events : "—";
   document.getElementById("kpis").innerHTML=[
-    [meta.evidence,"条证据（全部可溯源）"],[meta.sources,"个独立来源"],
+    [meta.evidence,"条证据（全部可溯源）"],[independent,"个独立事件（转载已归并）"],[meta.sources,"个独立来源"],
     [aShare+"%","一手/权威层级占比"],[withDate+"/"+meta.evidence,"带明确发布日期"],
   ].map(([n,l])=>`<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
 
@@ -301,9 +307,18 @@ function render(meta, evidence, sources, mode){
       if(openId===r.corpus_id){
         const metrics = Array.isArray(r.metrics) && r.metrics.length
           ? `<b>数值指标：</b>` + r.metrics.map(m=>`${esc(m.metric)} <b>${esc(m.value)}</b> ${esc(m.unit||"")}${m.as_of?`（${esc(m.as_of)}）`:""}`).join("；") + `<br>` : "";
+        const ACCESS={fulltext:"全文",abstract:"摘要",snippet:"检索片段",unknown:"未知"};
+        const VERIFY={"human-verified":"已人工核验",provisional:"初步（未核验全文）",disputed:"存疑"};
+        const ETYPE={academic:"学术",product:"产品",user:"用户",regulation:"法规",market:"市场数据",other:"其他"};
+        const siblings = r.event_cluster_id ? evidence.filter(x=>x.event_cluster_id===r.event_cluster_id).length : 1;
+        const eventLine = r.event_cluster_id
+          ? `<b>所属事件：</b><code>${esc(r.event_cluster_id)}</code>（同一事件共 ${siblings} 条，统计独立性时按 1 个事件计）`
+          : `<b>所属事件：</b>独立事件`;
         row+=`<tr class="detail"><td colspan="5">
           <b>摘录：</b>${esc(r.excerpt||"—")}<br>
           <b>定位器：</b>${esc(r.locator||"—")}　<b>采集：</b>${esc(fmtDate(r.retrieved_at))}　<b>来源类型：</b>${esc(r.source_kind||"other")}　<b>corpus_id：</b><code>${esc(r.corpus_id)}</code><br>
+          <b>证据类型：</b>${esc(ETYPE[r.evidence_type]||r.evidence_type||"其他")}　<b>可得性：</b>${esc(ACCESS[r.access_level]||r.access_level||"未知")}　<b>核验状态：</b>${esc(VERIFY[r.verification_state]||r.verification_state||"初步")}<br>
+          ${eventLine}<br>
           ${metrics}
           ${r.bias_notes?`<b>偏差标注：</b>${esc(r.bias_notes)}`:""}
         </td></tr>`;
