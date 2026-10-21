@@ -25,6 +25,15 @@
   .kpi .n{font-size:26px;font-weight:700;color:var(--accent)}
   .kpi .l{font-size:12px;color:var(--muted);margin-top:2px}
   .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:28px}
+  .section-title{font-size:15px;font-weight:600;margin:4px 0 12px;letter-spacing:.5px}
+  .section-title .hint{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px}
+  .trend-empty{color:var(--muted);font-size:12.5px;padding:24px 0;text-align:center}
+  .trend-note{color:var(--muted);font-size:11.5px;margin-top:6px}
+  svg.trend{width:100%;height:auto;display:block}
+  svg.trend circle.pt{cursor:pointer;stroke:#fff;stroke-width:1.2}
+  svg.trend circle.pt:hover{stroke:#1f2937;stroke-width:1.6}
+  svg.trend circle.hollow{fill:#fff !important;stroke-width:1.8}
+  svg.trend text{font-family:inherit}
   .card{border:1px solid var(--line);border-radius:10px;padding:16px}
   .card h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:12px;letter-spacing:.5px}
   .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
@@ -91,6 +100,13 @@
       <div class="card"><h3>来源层级</h3><div class="donut-wrap" id="chart-tiers"></div></div>
       <div class="card"><h3>高频发布方 TOP 8</h3><div id="chart-publishers"></div></div>
       <div class="card"><h3>证据类型</h3><div id="chart-types"></div></div>
+    </div>
+
+    <h2 class="section-title">数值趋势 <span class="hint">来自结构化指标（metrics），每个点可点击跳到对应证据；时间取发布月</span></h2>
+    <div class="charts trends">
+      <div class="card"><h3>售价随时间 · 美元（对数轴）</h3><div id="trend-price-usd"></div></div>
+      <div class="card"><h3>售价随时间 · 人民币</h3><div id="trend-price-cny"></div></div>
+      <div class="card"><h3>续航与电池随时间</h3><div id="trend-battery"></div></div>
     </div>
 
     <div class="controls">
@@ -226,6 +242,92 @@ function barList(pairs){
 const TIER_COLORS={"A-primary":"#1a56db","B-expert":"#0e9f6e","C-secondary":"#d97706"};
 const TYPE_COLORS=["#1a56db","#0e9f6e","#d97706","#7c3aed","#0891b2","#db2777","#6b7280"];
 
+// ---------- 数值趋势：时间散点（纯 SVG，零依赖） ----------
+const SERIES_COLORS=["#1a56db","#d97706","#0e9f6e","#7c3aed","#db2777","#0891b2","#6b7280"];
+function monthIndex(t){
+  const m=/^(\d{4})(?:-(\d{2}))?/.exec(t||""); if(!m) return null;
+  return Number(m[1])*12 + (m[2]?Number(m[2])-1:5);   // "YYYY" 取年中
+}
+function monthLabel(idx){ const y=Math.floor(idx/12), m=idx%12+1; return `${y}.${String(m).padStart(2,"0")}`; }
+function niceLinearTicks(max){
+  const raw=max/5, pow=Math.pow(10,Math.floor(Math.log10(raw)));
+  const step=[1,2,2.5,5,10].map(k=>k*pow).find(s=>max/s<=6)||pow*10;
+  const ticks=[]; for(let v=0; v<=max*1.15+1e-9; v+=step) ticks.push(+v.toFixed(6)); return ticks;
+}
+function scatter(points, {unit="", logY=false, height=230, seriesOrder=null}={}){
+  const pts=points.filter(p=>monthIndex(p.t)!==null && typeof p.v==="number" && isFinite(p.v) && (!logY||p.v>0));
+  if(pts.length<2) return {svg:`<div class="trend-empty">带时间的数据点不足（${pts.length} 个），暂无法呈现</div>`, legend:""};
+  const W=520,H=height,L=56,R=14,T=14,B=36;
+  const xs=pts.map(p=>monthIndex(p.t)); let x0=Math.min(...xs)-1, x1=Math.max(...xs)+1; if(x1-x0<4){x0-=2;x1+=2;}
+  const vs=pts.map(p=>p.v);
+  let yTicks, yOf;
+  if(logY){
+    const lo=Math.log10(Math.min(...vs))-0.1, hi=Math.log10(Math.max(...vs))+0.12;
+    yOf=v=>T+(H-T-B)*(1-(Math.log10(v)-lo)/(hi-lo));
+    yTicks=[]; for(let e=Math.floor(lo); e<=Math.ceil(hi); e++) for(const k of [1,2,5]){ const v=k*Math.pow(10,e); if(Math.log10(v)>=lo&&Math.log10(v)<=hi) yTicks.push(v); }
+  } else {
+    yTicks=niceLinearTicks(Math.max(...vs)); const top=yTicks[yTicks.length-1];
+    yOf=v=>T+(H-T-B)*(1-v/top);
+  }
+  const xOf=i=>L+(W-L-R)*(i-x0)/(x1-x0);
+  const span=x1-x0, xStep=[1,2,3,6,12,24].find(s=>span/s<=7)||24;
+  const xTicks=[]; for(let i=Math.ceil(x0/xStep)*xStep; i<=x1; i+=xStep) xTicks.push(i);
+  const seriesNames=seriesOrder||[...new Set(pts.map(p=>p.series))];
+  const color=s=>SERIES_COLORS[seriesNames.indexOf(s)%SERIES_COLORS.length];
+  const fmt=v=>v>=1000?v.toLocaleString("en-US"):String(v);
+  // 同月同值的点做小幅水平错位，避免完全重叠
+  const seen={};
+  const circles=pts.map(p=>{
+    const key=monthIndex(p.t)+"|"+p.v; const n=(seen[key]=(seen[key]||0)+1)-1;
+    const cx=xOf(monthIndex(p.t))+(n?((n%2?1:-1)*Math.ceil(n/2)*5):0), cy=yOf(p.v);
+    return `<circle class="pt${p.hollow?" hollow":""}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="${color(p.series)}" stroke="${p.hollow?color(p.series):"#fff"}" data-id="${esc(p.id)}" data-claim="${esc(p.label)}"><title>${esc(p.label)}\n${fmt(p.v)} ${esc(unit)} · ${esc(p.t)}${p.series?" · "+esc(p.series):""}</title></circle>`;
+  }).join("");
+  const grid=yTicks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${yOf(v).toFixed(1)}" y2="${yOf(v).toFixed(1)}" stroke="#eef0f3"/><text x="${L-6}" y="${(yOf(v)+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#6b7280">${fmt(v)}</text>`).join("");
+  const xa=xTicks.map(i=>`<text x="${xOf(i).toFixed(1)}" y="${H-B+16}" text-anchor="middle" font-size="10" fill="#6b7280">${monthLabel(i)}</text><line x1="${xOf(i).toFixed(1)}" x2="${xOf(i).toFixed(1)}" y1="${H-B}" y2="${H-B+4}" stroke="#d1d5db"/>`).join("");
+  const svg=`<svg class="trend" viewBox="0 0 ${W} ${H}" role="img">${grid}
+    <line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="#d1d5db"/>${xa}
+    <text x="${L-6}" y="${T-2}" text-anchor="end" font-size="10" fill="#9ca3af">${esc(unit)}</text>${circles}</svg>`;
+  const legend=`<div class="legend">${seriesNames.map(s=>`<span><i class="dot" style="background:${color(s)};border-radius:50%"></i>${esc(s)}（${pts.filter(p=>p.series===s).length}）</span>`).join("")}</div>`;
+  return {svg, legend};
+}
+function productCategory(r){
+  const txt=r.claim||"";
+  if((r.domains||[]).includes("robotics")||(r.tags||[]).includes("机器人")||/机器人|robot|optimus/i.test(txt)) return "人形机器人";
+  if(/vision pro|quest|galaxy xr|头显|headset|visor/i.test(txt)) return "XR 头显";
+  if(/耳机|earbud|ring|戒指|\bpin\b|rabbit r1|手机|phone/i.test(txt)) return "其他可穿戴/设备";
+  return "AI/AR 眼镜";
+}
+function metricPoints(evidence, names, unitFilter, seriesOf, extra){
+  const out=[];
+  for(const r of evidence){
+    for(const m of (Array.isArray(r.metrics)?r.metrics:[])){
+      if(!names.includes(m.metric)) continue;
+      if(unitFilter && !unitFilter.includes(m.unit)) continue;
+      const t=m.as_of||(r.published_at||"").slice(0,7); if(!t) continue;
+      out.push({t, v:Number(m.value), id:r.corpus_id, label:r.claim, series:seriesOf(r,m), ...(extra?extra(r,m):{})});
+    }
+  }
+  return out;
+}
+function renderTrends(evidence, jump){
+  const mount=(id, res, note)=>{ const el=document.getElementById(id); el.innerHTML=res.svg+res.legend+(note?`<div class="trend-note">${note}</div>`:""); };
+  const usd=metricPoints(evidence,["售价"],["美元"],r=>productCategory(r));
+  mount("trend-price-usd", scatter(usd,{unit:"美元",logY:true,seriesOrder:["AI/AR 眼镜","XR 头显","人形机器人","其他可穿戴/设备"]}),
+        `${usd.length} 个标价点，对数轴便于同屏比较三个量级；品类按证据文本启发式判断。`);
+  const cny=metricPoints(evidence,["售价"],["元"],r=>productCategory(r));
+  mount("trend-price-cny", scatter(cny,{unit:"元"}), `${cny.length} 个国产设备标价点（线性轴）。`);
+  const bat=metricPoints(evidence,["续航时间","续航上限"],["小时"],
+    (r,m)=>m.metric==="续航上限"?"续航上限":(r.evidence_type==="user"?"用户实测续航":"厂商标称续航"),
+    (r,m)=>({hollow:m.metric==="续航上限"}));
+  mount("trend-battery", scatter(bat,{unit:"小时",seriesOrder:["厂商标称续航","用户实测续航","续航上限"]}),
+        `${bat.length} 个点——样本仍少，只作观察；标称与用户实测分色，差距本身就是信号。`);
+  for(const id of ["trend-price-usd","trend-price-cny","trend-battery"]){
+    document.getElementById(id).addEventListener("click", e=>{
+      const c=e.target.closest("circle.pt"); if(c) jump(c.dataset.id, c.dataset.claim);
+    });
+  }
+}
+
 function render(meta, evidence, sources, mode){
   document.getElementById("status").style.display="none";
   document.getElementById("app").style.display="block";
@@ -336,6 +438,11 @@ function render(meta, evidence, sources, mode){
   document.getElementById("f-tier").addEventListener("change",refresh);
   document.getElementById("more").onclick=()=>{shown+=PAGE;page();};
   refresh();
+  renderTrends(evidence, (cid, claim)=>{
+    qInput.value=(claim||"").slice(0,14); domainSel.value=""; document.getElementById("f-tier").value="";
+    shown=PAGE; openId=cid; page();
+    document.querySelector("table").scrollIntoView({behavior:"smooth", block:"start"});
+  });
 }
 
 load().catch(e=>{
