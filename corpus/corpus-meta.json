@@ -1,0 +1,15 @@
+{
+  "corpus_version": "lib-2026.10.21",
+  "updated_at": "2026-10-21T08:47:36Z",
+  "evidence": 87,
+  "sources": 66,
+  "domains": [
+    "consumer",
+    "cross-domain",
+    "home",
+    "medical-assistive"
+  ],
+  "db_sha256": "dce7f3c06ba69ec85ee81c1f85a0a05b0270618bb30ff39537359d0f820d65e0",
+  "db_bytes": 159744,
+  "remote": "https://foresight-corpus-alex707.aws-ap-northeast-1.turso.io"
+}
