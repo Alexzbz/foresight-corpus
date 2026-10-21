@@ -77,7 +77,7 @@
   <header>
     <div>
       <h1>AI 硬件前瞻 · 共享证据语料库</h1>
-      <div class="sub">全部证据可溯源：每条带来源链接、摘录/定位器与偏差标注 · 数据由仓库快照实时加载</div>
+      <div class="sub">全部证据可溯源：每条带来源链接、摘录/定位器与偏差标注 · 打开页面直查 Turso 实时库（不可达时自动降级 CDN 快照）</div>
     </div>
     <div class="meta-right" id="meta"></div>
   </header>
@@ -121,6 +121,12 @@
 "use strict";
 const CDN = "https://cdn.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/corpus/";
 const FALLBACK_CDN = "https://fastly.jsdelivr.net/gh/Alexzbz/foresight-corpus@main/corpus/";
+// 实时通道：Turso 在线库允许浏览器跨域查询（只读令牌，语料本为公开数据）。
+// 每次打开页面直查实时库，入库即见；CDN 快照仅作降级备用。
+const LIVE = {
+  url: "https://foresight-corpus-alex707.aws-ap-northeast-1.turso.io/v2/pipeline",
+  token: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicm8iLCJpYXQiOjE3OTI1OTE0ODIsImlkIjoiMDFhMTVlYmItMzMwMS03MmI0LWIxYmItNjczNjI0NTBhN2Y4Iiwia2lkIjoicXFTcmFZN1NhSnh4QUZNRXdqV3VWeUJvSDBWaG5ONk9DRUFTbW45S0pFYyIsInJpZCI6ImVmMDc2NWRhLTAyNmEtNGM0Ny05ZDMyLWVlM2ViNjk2NGZkYyJ9.5wAXTpuWIrs-IGNA2poX37k9ryWnjkcWw3F3b8DVncAfwMAJUpH2ONwU1X8yb8TwyuZ36bYBfsNczwtNtTcqBw",
+};
 
 async function fetchText(url){
   try{ const r = await fetch(url); if(!r.ok) throw new Error(r.status); return await r.text(); }
@@ -129,11 +135,48 @@ async function fetchText(url){
 function parseJsonl(text){
   return text.split("\n").filter(l=>l.trim()).map(l=>{try{return JSON.parse(l)}catch(e){return null}}).filter(Boolean);
 }
+async function fetchLive(){
+  const stmt = (sql) => ({type:"execute", stmt:{sql, args:[]}});
+  const resp = await fetch(LIVE.url, {
+    method: "POST",
+    headers: {"Authorization": "Bearer " + LIVE.token, "Content-Type": "application/json"},
+    body: JSON.stringify({requests: [
+      stmt("SELECT key, value FROM corpus_meta"),
+      stmt("SELECT corpus_id, claim, excerpt, locator, source_id, source_url, publisher, tier, published_at, retrieved_at, domains, geography, bias_notes, source_kind, tags, metrics, observation_type FROM evidence ORDER BY retrieved_at DESC"),
+      stmt("SELECT COUNT(*) FROM sources"),
+    ]}),
+  });
+  if(!resp.ok) throw new Error("live api " + resp.status);
+  const payload = await resp.json();
+  const results = payload.results || [];
+  if(results.some(r => r.type === "error")) throw new Error("live query error");
+  const cell = (v) => (v && typeof v === "object" && "value" in v) ? v.value : v;
+  const rowsOf = (i) => (results[i].response.result.rows || []).map(r => r.map(cell));
+  const meta = Object.fromEntries(rowsOf(0).map(([k, v]) => [k, v]));
+  const evidence = rowsOf(1).map(r => {
+    const j = (s, d) => { try { return JSON.parse(s || JSON.stringify(d)); } catch(e) { return d; } };
+    return {corpus_id: r[0], claim: r[1], excerpt: r[2] || "", locator: r[3] || "",
+            source_id: r[4], source_url: r[5], publisher: r[6], tier: r[7],
+            published_at: r[8] || "", retrieved_at: r[9] || "",
+            domains: j(r[10], []), geography: j(r[11], []), bias_notes: r[12] || "",
+            source_kind: r[13] || "other", tags: j(r[14], []), metrics: j(r[15], []),
+            observation_type: r[16] || "other"};
+  });
+  return {mode: "live",
+          meta: {corpus_version: meta.corpus_version, updated_at: meta.updated_at,
+                 evidence: evidence.length, sources: Number(rowsOf(2)[0][0] || 0)},
+          evidence};
+}
 const TIER_NAMES = {"A-primary":"A 一手/权威","B-expert":"B 专家/分析","C-secondary":"C 二手/媒体"};
 const DOMAIN_NAMES = {"consumer":"消费","home":"家居","medical-assistive":"医疗辅助","cross-domain":"跨域",
                       "robotics":"机器人","industrial":"工业","automotive":"车载"};
 
 async function load(){
+  try {
+    const live = await fetchLive();
+    render(live.meta, live.evidence, [], live.mode);
+    return;
+  } catch(e) { /* 实时通道不可达，落回 CDN 快照 */ }
   const meta = JSON.parse(await fetchText(CDN+"corpus-meta.json"));
   const domains = meta.domains||[];
   const evidenceMap = new Map();
@@ -143,8 +186,11 @@ async function load(){
   }
   for(const s of parseJsonl(await fetchText(CDN+"evidence/sources.jsonl"))) sourceMap.set(s.source_id,s);
   const evidence=[...evidenceMap.values()];
-  for(const r of evidence){ try{r.domains=JSON.parse(r.domains||"[]")}catch(e){r.domains=[]} }
-  render(meta, evidence, [...sourceMap.values()]);
+  for(const r of evidence){
+    const j=(s,d)=>{try{return JSON.parse(s||JSON.stringify(d))}catch(e){return d}};
+    r.domains=j(r.domains,[]); r.tags=j(r.tags,[]); r.metrics=j(r.metrics,[]);
+  }
+  render(meta, evidence, [...sourceMap.values()], "snapshot");
 }
 
 function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
@@ -175,14 +221,18 @@ function barList(pairs){
 const TIER_COLORS={"A-primary":"#1a56db","B-expert":"#0e9f6e","C-secondary":"#d97706"};
 const TYPE_COLORS=["#1a56db","#0e9f6e","#d97706","#7c3aed","#0891b2","#db2777","#6b7280"];
 
-function render(meta, evidence, sources){
+function render(meta, evidence, sources, mode){
   document.getElementById("status").style.display="none";
   document.getElementById("app").style.display="block";
+  const badge = mode === "live"
+    ? `<span style="color:#0e9f6e;font-weight:600">● 实时（Turso 在线库，入库即见）</span>`
+    : `<span style="color:#d97706;font-weight:600">◈ 快照模式（实时通道不可达，已降级 CDN）</span>`;
   document.getElementById("meta").innerHTML=
-    `版本 <code>${esc(meta.corpus_version)}</code><br>更新于 ${esc((meta.updated_at||"").replace("T"," ").replace("Z"," UTC"))}<br>`+
-    `db sha256 <code style="font-size:10px">${esc((meta.db_sha256||"").slice(0,16))}…</code>`;
+    `${badge}<br>版本 <code>${esc(meta.corpus_version)}</code> · 更新于 ${esc((meta.updated_at||"").replace("T"," ").replace("Z"," UTC"))}`+
+    (meta.db_sha256 ? `<br>db sha256 <code style="font-size:10px">${esc(meta.db_sha256.slice(0,16))}…</code>` : "");
   document.getElementById("foot-left").textContent=
-    `${meta.evidence} 条证据 · ${meta.sources} 个来源 · 快照 ${meta.db_bytes? (meta.db_bytes/1024).toFixed(0)+" KB":""}`;
+    `${meta.evidence} 条证据 · ${meta.sources} 个来源` +
+    (meta.db_bytes ? ` · 快照 ${(meta.db_bytes/1024).toFixed(0)} KB` : "");
 
   const tierCount={},domainCount={},pubCount={},typeCount={};
   for(const r of evidence){
@@ -249,9 +299,12 @@ function render(meta, evidence, sources){
         <td><a class="src" href="${esc(r.source_url)}" target="_blank" rel="noopener">打开 ↗</a></td>
       </tr>`;
       if(openId===r.corpus_id){
+        const metrics = Array.isArray(r.metrics) && r.metrics.length
+          ? `<b>数值指标：</b>` + r.metrics.map(m=>`${esc(m.metric)} <b>${esc(m.value)}</b> ${esc(m.unit||"")}${m.as_of?`（${esc(m.as_of)}）`:""}`).join("；") + `<br>` : "";
         row+=`<tr class="detail"><td colspan="5">
           <b>摘录：</b>${esc(r.excerpt||"—")}<br>
-          <b>定位器：</b>${esc(r.locator||"—")}　<b>采集：</b>${esc(fmtDate(r.retrieved_at))}　<b>corpus_id：</b><code>${esc(r.corpus_id)}</code><br>
+          <b>定位器：</b>${esc(r.locator||"—")}　<b>采集：</b>${esc(fmtDate(r.retrieved_at))}　<b>来源类型：</b>${esc(r.source_kind||"other")}　<b>corpus_id：</b><code>${esc(r.corpus_id)}</code><br>
+          ${metrics}
           ${r.bias_notes?`<b>偏差标注：</b>${esc(r.bias_notes)}`:""}
         </td></tr>`;
       }
