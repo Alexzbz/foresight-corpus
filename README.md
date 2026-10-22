@@ -4,7 +4,7 @@
 带来源 URL、可定位的摘录（excerpt / locator）、发布层级（A-primary / B-expert /
 C-secondary）与偏差标注，全部可回溯、可复核。
 
-**当前版本：`lib-2026.10.22` · 294 条证据（276 个独立事件）· 258 个来源 · 7 个域 · schema v3（主题标签/来源类型/数值指标/事件聚类/核验状态）**
+**当前版本：`lib-2026.10.22` · 357 条证据（339 个独立事件）· 260 个来源 · 7 个域 · schema v3（主题标签/来源类型/数值指标/事件聚类/核验状态）**
 （consumer / home / medical-assistive / cross-domain / robotics / automotive / industrial，校验和见
 [corpus/corpus-meta.json](corpus/corpus-meta.json)）
 
