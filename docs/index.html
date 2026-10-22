@@ -102,11 +102,13 @@
       <div class="card"><h3>证据类型</h3><div id="chart-types"></div></div>
     </div>
 
-    <h2 class="section-title">数值趋势 <span class="hint">来自结构化指标（metrics），每个点可点击跳到对应证据；时间取发布月</span></h2>
-    <div class="charts trends">
-      <div class="card"><h3>售价随时间 · 美元（对数轴）</h3><div id="trend-price-usd"></div></div>
-      <div class="card"><h3>售价随时间 · 人民币</h3><div id="trend-price-cny"></div></div>
-      <div class="card"><h3>续航与电池随时间</h3><div id="trend-battery"></div></div>
+    <div id="trends-section" hidden>
+      <h2 class="section-title">数值趋势 <span class="hint">来自结构化指标（metrics），每个点可点击跳到对应证据；时间取发布月</span></h2>
+      <div class="charts trends">
+        <div class="card"><h3>售价随时间 · 美元（对数轴）</h3><div id="trend-price-usd"></div></div>
+        <div class="card"><h3>售价随时间 · 人民币</h3><div id="trend-price-cny"></div></div>
+        <div class="card"><h3>续航与电池随时间</h3><div id="trend-battery"></div></div>
+      </div>
     </div>
 
     <div class="controls">
@@ -438,11 +440,13 @@ function render(meta, evidence, sources, mode){
   document.getElementById("f-tier").addEventListener("change",refresh);
   document.getElementById("more").onclick=()=>{shown+=PAGE;page();};
   refresh();
-  renderTrends(evidence, (cid, claim)=>{
-    qInput.value=(claim||"").slice(0,14); domainSel.value=""; document.getElementById("f-tier").value="";
-    shown=PAGE; openId=cid; page();
-    document.querySelector("table").scrollIntoView({behavior:"smooth", block:"start"});
-  });
+  if(!document.getElementById("trends-section").hidden){
+    renderTrends(evidence, (cid, claim)=>{
+      qInput.value=(claim||"").slice(0,14); domainSel.value=""; document.getElementById("f-tier").value="";
+      shown=PAGE; openId=cid; page();
+      document.querySelector("table").scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  }
 }
 
 load().catch(e=>{
