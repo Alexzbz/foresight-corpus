@@ -4,9 +4,13 @@
 带来源 URL、可定位的摘录（excerpt / locator）、发布层级（A-primary / B-expert /
 C-secondary）与偏差标注，全部可回溯、可复核。
 
-**当前版本：`lib-2026.10.22` · 357 条证据（339 个独立事件）· 260 个来源 · 7 个域 · schema v3（主题标签/来源类型/数值指标/事件聚类/核验状态）**
+**当前版本：`lib-2026.10.22` · 414 条证据（395 个独立事件）· 261 个来源 · 7 个域 · schema v3（主题标签/来源类型/数值指标/事件聚类/核验状态）**
 （consumer / home / medical-assistive / cross-domain / robotics / automotive / industrial，校验和见
 [corpus/corpus-meta.json](corpus/corpus-meta.json)）
+
+## 研究产出
+
+- [主题分析：智能眼镜采集行为的旁观者理解与隐私设计研究机会](analysis/2026-10-bystander-privacy-thematic-analysis.md) —— 首份正式主题分析（5 主题 / 4 张候选研究卡片 v0，全部带 corpus_id 可溯源，待人工复核）
 
 ## 在线看板
 

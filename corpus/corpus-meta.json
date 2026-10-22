@@ -1,9 +1,9 @@
 {
   "corpus_version": "lib-2026.10.22",
-  "updated_at": "2026-10-22T00:59:11Z",
+  "updated_at": "2026-10-22T02:14:34Z",
   "schema_version": "3",
-  "evidence": 357,
-  "sources": 260,
+  "evidence": 414,
+  "sources": 261,
   "domains": [
     "automotive",
     "consumer",
@@ -13,18 +13,18 @@
     "medical-assistive",
     "robotics"
   ],
-  "tagged": 270,
+  "tagged": 327,
   "events": 13,
-  "independent_events": 339,
+  "independent_events": 395,
   "by_evidence_type": {
     "product": 66,
     "user": 50,
+    "academic": 122,
     "other": 105,
-    "academic": 65,
     "market": 51,
     "regulation": 20
   },
-  "db_sha256": "71c640ebef31d01af59eb7fc55cddc7e1aee16800960684de4b7e92c89c47a51",
-  "db_bytes": 991232,
+  "db_sha256": "f054318b92165f05f86b65a4a38e3892fcd6683eaea8533b29874c975cd847e3",
+  "db_bytes": 1429504,
   "remote": "https://foresight-corpus-alex707.aws-ap-northeast-1.turso.io"
 }
